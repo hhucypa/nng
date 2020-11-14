@@ -37,7 +37,6 @@ include(CheckCCompilerFlag)
 include(CMakeDependentOption)
 include(GNUInstallDirs)
 include(TestBigEndian)
-include(FindUnixCommands)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
