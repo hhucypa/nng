@@ -336,11 +336,6 @@ endif ()
 
 add_subdirectory(src)
 
-foreach (_PKG IN ITEMS ${NNG_PKGS})
-    find_package(${_PKG} REQUIRED)
-endforeach ()
-add_definitions(${NNG_DEFS})
-
 if (NNG_TESTS)
     add_subdirectory(tests)
     add_subdirectory(perf)
