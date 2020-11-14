@@ -105,6 +105,18 @@ option(NNG_ENABLE_COVERAGE "Enable coverage reporting." OFF)
 # Enable access to private APIs for our own use.
 add_definitions(-DNNG_PRIVATE)
 
+if (NOT (BUILD_SHARED_LIBS))
+    set(NNG_STATIC_LIB ON)
+    message(STATUS "Building static libs")
+endif ()
+
+add_library(${PROJECT_NAME})
+
+add_library(${PROJECT_NAME}_testlib STATIC EXCLUDE_FROM_ALL
+        ${PROJECT_SOURCE_DIR}/tests/testutil.c
+        ${PROJECT_SOURCE_DIR}/tests/testutil.h)
+target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC NNG_STATIC_LIB NNG_TEST_LIB)
+
 # We can use rlimit to configure the stack size for systems
 # that have too small defaults.  This is not used for Windows,
 # which can grow thread stacks sensibly.  (Note that NNG can get
@@ -260,46 +272,38 @@ endif ()
 macro(nng_check_func SYM DEF)
     check_function_exists(${SYM} ${DEF})
     if (${DEF})
-        add_definitions(-D${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME}_testlib PRIVATE ${DEF}=1)
     endif ()
 endmacro(nng_check_func)
 
 macro(nng_check_sym SYM HDR DEF)
     check_symbol_exists(${SYM} ${HDR} ${DEF})
     if (${DEF})
-        add_definitions(-D${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME}_testlib PRIVATE ${DEF}=1)
     endif ()
 endmacro(nng_check_sym)
 
 macro(nng_check_lib LIB SYM DEF)
     check_library_exists(${LIB} ${SYM} "" ${DEF})
     if (${DEF})
-        add_definitions(-D${DEF}=1)
-        list(APPEND NNG_LIBS ${LIB})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME}_testlib PRIVATE ${DEF}=1)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB})
+        target_link_libraries(${PROJECT_NAME}_testlib PRIVATE ${LIB})
     endif ()
 endmacro(nng_check_lib)
 
 macro(nng_check_struct_member STR MEM HDR DEF)
     check_struct_has_member("struct ${STR}" ${MEM} ${HDR} ${DEF})
     if (${DEF})
-        add_definitions(-D${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
+        target_compile_definitions(${PROJECT_NAME}_testlib PRIVATE ${DEF}=1)
     endif ()
 endmacro(nng_check_struct_member)
 
-if (WIN32)
-    # Windows is a special snowflake.
-    list(APPEND NNG_LIBS ws2_32 mswsock advapi32)
-    nng_check_sym(InitializeConditionVariable windows.h NNG_HAVE_CONDVAR)
-    nng_check_sym(snprintf stdio.h NNG_HAVE_SNPRINTF)
-    if (NOT NNG_HAVE_CONDVAR OR NOT NNG_HAVE_SNPRINTF)
-        message(FATAL_ERROR
-                "Modern Windows API support is missing. "
-                "Versions of Windows prior to Vista are not supported.  "
-                "Further, the 32-bit MinGW environment is not supported. "
-                "Ensure you have at least Windows Vista or newer, and are "
-                "using either Visual Studio 2013 or newer or MinGW-W64.")
-    endif ()
-else ()
+if (NOT WIN32)
     # Unconditionally declare the following feature test macros.  These are
     # needed for some platforms (glibc and SunOS/illumos) and are harmless
     # on the others.
@@ -307,8 +311,6 @@ else ()
     add_definitions(-D_REENTRANT)
     add_definitions(-D_THREAD_SAFE)
     add_definitions(-D_POSIX_PTHREAD_SEMANTICS)
-    list(APPEND NNG_PKGS Threads)
-    find_package(Threads REQUIRED)
 
     nng_check_func(lockf NNG_HAVE_LOCKF)
     nng_check_func(flock NNG_HAVE_FLOCK)
@@ -360,11 +362,6 @@ nng_check_sym(strncasecmp string.h NNG_HAVE_STRNCASECMP)
 # For example, idhash depends on private symbols, so don't test it
 # when using a shared library on Windows because the symbols won't
 # resolve.
-if (NOT (BUILD_SHARED_LIBS))
-    set(NNG_STATIC_LIB ON)
-    message(STATUS "Building static libs")
-endif ()
-
 # In order to facilitate testing, we want to add a library that includes
 # our common test code.  We do this before iterating everywhere else so
 # that we can locate our tests inside the directories where we want.

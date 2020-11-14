@@ -8,18 +8,10 @@
 # found online at https://opensource.org/licenses/MIT.
 #
 
-add_library(${PROJECT_NAME}
-        nng.c
-        ${PROJECT_SOURCE_DIR}/include/nng/nng.h)
+nng_sources(nng.c)
+nng_headers(nng/nng.h)
 
-add_library(${PROJECT_NAME}_testlib STATIC
-        EXCLUDE_FROM_ALL
-        nng.c
-        ${PROJECT_SOURCE_DIR}/tests/testutil.c
-        ${PROJECT_SOURCE_DIR}/tests/testutil.h
-        ${PROJECT_SOURCE_DIR}/include/nng/nng.h)
 
-target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC NNG_STATIC_LIB NNG_TEST_LIB)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME}_testlib PRIVATE ${PROJECT_SOURCE_DIR}/src)
