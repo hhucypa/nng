@@ -41,19 +41,6 @@ include(FindUnixCommands)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-if (POLICY CMP0042)
-    # Newer cmake on MacOS should use @rpath
-    cmake_policy(SET CMP0042 NEW)
-endif ()
-if (POLICY CMP0079)
-    cmake_policy(SET CMP0079 NEW)
-endif ()
-
-if (POLICY CMP0028)
-    # Double colon targets are only alias or imports.
-    cmake_policy(SET CMP0028 NEW)
-endif ()
-
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
