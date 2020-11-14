@@ -15,9 +15,12 @@ if (NNG_ENABLE_NNGCAT)
     install(TARGETS nngcat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             COMPONENT Tools)
 
-    # TODO: This should be refactored to use a test driver.
-    if (NNG_TESTS AND NNG_PLATFORM_POSIX AND BASH)
+    if (NNG_TESTS AND NNG_PLATFORM_LINUX)
         include(FindUnixCommands)
+    endif ()
+    # TODO: This should be refactored to use a test driver.
+    # We only run the tests on Linux for now, because the Darwin CI/CD is too brittle.
+    if (NNG_TESTS AND NNG_PLATFORM_LINUX AND BASH)
         macro(add_nngcat_test NAME TIMEOUT)
             add_test(NAME ${PROJECT_NAME}.${NAME} COMMAND ${BASH} ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}_test.sh $<TARGET_FILE:nngcat>)
             set_tests_properties(${PROJECT_NAME}.${NAME} PROPERTIES TIMEOUT ${TIMEOUT})
