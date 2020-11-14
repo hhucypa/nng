@@ -15,7 +15,7 @@ if (NNG_ENABLE_NNGCAT)
     install(TARGETS nngcat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             COMPONENT Tools)
 
-    if (NNG_TESTS AND NNG_PLATFORM_LINUX)
+    if (NNG_TESTS AND CMAKE_SYSTEM_NAME MATCHES "Linux")
         include(FindUnixCommands)
     endif ()
     # TODO: This should be refactored to use a test driver.
