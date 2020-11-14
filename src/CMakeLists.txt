@@ -12,9 +12,8 @@ nng_sources(nng.c)
 nng_headers(nng/nng.h)
 
 
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_include_directories(${PROJECT_NAME}_testlib PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(nng PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(nng_testing PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 add_subdirectory(core)
 
@@ -49,33 +48,27 @@ add_subdirectory(supplemental/websocket)
 # visibility, so that only the symbols that should be exposed in the
 # resulting library are.  This is the default with Windows.
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE NNG_SHARED_LIB)
+    target_compile_definitions(nng PRIVATE NNG_SHARED_LIB)
     if (NNG_HIDDEN_VISIBILITY)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE NNG_HIDDEN_VISIBILITY)
-        set_target_properties(${PROJECT_NAME} PROPERTIES C_VISIBILITY_PRESET hidden)
+        target_compile_definitions(nng PRIVATE NNG_HIDDEN_VISIBILITY)
+        set_target_properties(nng PROPERTIES C_VISIBILITY_PRESET hidden)
     endif ()
 else ()
-    target_compile_definitions(${PROJECT_NAME} PUBLIC NNG_STATIC_LIB)
+    target_compile_definitions(nng PUBLIC NNG_STATIC_LIB)
 endif ()
 
-set_target_properties(${PROJECT_NAME}
-        PROPERTIES SOVERSION ${NNG_ABI_SOVERSION} VERSION "${NNG_ABI_VERSION}")
+set_target_properties(nng PROPERTIES SOVERSION ${NNG_ABI_SOVERSION} VERSION "${NNG_ABI_VERSION}")
 
-set_target_properties(${PROJECT_NAME}
-        PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-set_target_properties(${PROJECT_NAME}
-        PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-set_target_properties(${PROJECT_NAME}
-        PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties(nng PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties(nng PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties(nng PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties(nng PROPERTIES FRAMEWORK OFF)
 
-set_target_properties(${PROJECT_NAME} ${PROJECT_NAME}
-        PROPERTIES FRAMEWORK OFF)
-
-target_include_directories(${PROJECT_NAME} INTERFACE $<INSTALL_INTERFACE:include>
+target_include_directories(nng INTERFACE $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_include_directories(${PROJECT_NAME}_testlib PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(nng PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(nng_testing PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}-target

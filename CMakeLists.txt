@@ -40,6 +40,8 @@ include(TestBigEndian)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+include(NNGHelpers)
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
@@ -96,12 +98,22 @@ if (NOT (BUILD_SHARED_LIBS))
     message(STATUS "Building static libs")
 endif ()
 
-add_library(${PROJECT_NAME})
+# These are library targets.  The "nng" library is the main public library.
+# The "nng_testing" is a full build of the library for test cases
+# only, which is done statically and includes even portions of the code
+# that are not part of the public library (things that may have been elided.)
+# The "nng_private" library is an interface that allows some internal tools
+# to obtain details about how the public library was built, so that we can
+# include or not include code based on what's actually present.
+add_library(nng)
 
-add_library(${PROJECT_NAME}_testlib STATIC EXCLUDE_FROM_ALL
+add_library(nng_testing STATIC EXCLUDE_FROM_ALL
         ${PROJECT_SOURCE_DIR}/tests/testutil.c
         ${PROJECT_SOURCE_DIR}/tests/testutil.h)
-target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC NNG_STATIC_LIB NNG_TEST_LIB)
+target_compile_definitions(nng_testing PUBLIC NNG_STATIC_LIB NNG_TEST_LIB NNG_PRIVATE)
+
+add_library(nng_private INTERFACE)
+target_compile_definitions(nng_private INTERFACE NNG_PRIVATE)
 
 # We can use rlimit to configure the stack size for systems
 # that have too small defaults.  This is not used for Windows,
@@ -255,40 +267,6 @@ else ()
     add_definitions(-DNNG_PLATFORM_POSIX)
 endif ()
 
-macro(nng_check_func SYM DEF)
-    check_function_exists(${SYM} ${DEF})
-    if (${DEF})
-        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
-        target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC ${DEF}=1)
-    endif ()
-endmacro(nng_check_func)
-
-macro(nng_check_sym SYM HDR DEF)
-    check_symbol_exists(${SYM} ${HDR} ${DEF})
-    if (${DEF})
-        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
-        target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC ${DEF}=1)
-    endif ()
-endmacro(nng_check_sym)
-
-macro(nng_check_lib LIB SYM DEF)
-    check_library_exists(${LIB} ${SYM} "" ${DEF})
-    if (${DEF})
-        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
-        target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC ${DEF}=1)
-        target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB})
-        target_link_libraries(${PROJECT_NAME}_testlib PRIVATE ${LIB})
-    endif ()
-endmacro(nng_check_lib)
-
-macro(nng_check_struct_member STR MEM HDR DEF)
-    check_struct_has_member("struct ${STR}" ${MEM} ${HDR} ${DEF})
-    if (${DEF})
-        target_compile_definitions(${PROJECT_NAME} PRIVATE ${DEF}=1)
-        target_compile_definitions(${PROJECT_NAME}_testlib PUBLIC ${DEF}=1)
-    endif ()
-endmacro(nng_check_struct_member)
-
 if (NOT WIN32)
     # Unconditionally declare the following feature test macros.  These are
     # needed for some platforms (glibc and SunOS/illumos) and are harmless
@@ -355,92 +333,6 @@ if (NNG_TESTS)
     enable_testing()
     set(all_tests, "")
 endif ()
-
-macro(nng_test NAME)
-    if (NNG_TESTS)
-        add_executable(${NAME} ${NAME}.c ${ARGN})
-        target_link_libraries(${NAME} ${PROJECT_NAME}_testlib)
-        target_include_directories(${NAME} PRIVATE
-                ${PROJECT_SOURCE_DIR}/tests
-                ${PROJECT_SOURCE_DIR}/src
-                ${PROJECT_SOURCE_DIR}/include)
-        add_test(NAME ${PROJECT_NAME}.${NAME} COMMAND ${NAME} -t)
-        set_tests_properties(${PROJECT_NAME}.${NAME} PROPERTIES TIMEOUT 180)
-    endif ()
-endmacro()
-
-macro(nng_test_if COND NAME)
-    if (${COND} AND NNG_TESTS)
-        add_executable(${NAME} ${NAME}.c ${ARGN})
-        target_link_libraries(${NAME} ${PROJECT_NAME}_testlib)
-        target_include_directories(${NAME} PRIVATE
-                ${PROJECT_SOURCE_DIR}/tests
-                ${PROJECT_SOURCE_DIR}/src
-                ${PROJECT_SOURCE_DIR}/include)
-        add_test(NAME ${PROJECT_NAME}.${NAME} COMMAND ${NAME} -t)
-        set_tests_properties(${PROJECT_NAME}.${NAME} PROPERTIES TIMEOUT 180)
-    endif ()
-endmacro()
-
-function(nng_sources)
-    foreach (f ${ARGN})
-        target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${f})
-        target_sources(${PROJECT_NAME}_testlib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${f})
-    endforeach ()
-endfunction()
-
-function(nng_headers)
-    foreach (f ${ARGN})
-        target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include/${f})
-        target_sources(${PROJECT_NAME}_testlib PRIVATE ${PROJECT_SOURCE_DIR}/include/${f})
-    endforeach ()
-endfunction()
-
-function(nng_defines)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE ${ARGN})
-    target_compile_definitions(${PROJECT_NAME}_testlib PRIVATE ${ARGN})
-endfunction()
-
-function(nng_link_libraries)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${ARGN})
-    target_link_libraries(${PROJECT_NAME}_testlib PRIVATE ${ARGN})
-endfunction()
-
-# nng_sources_if adds the sources unconditionally to the test library,
-# but conditionally to the production library.  This allows us to get
-# full test coverage while allowing a minimized delivery.
-function(nng_sources_if COND)
-    foreach (f ${ARGN})
-        if (${COND})
-            target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${f})
-        endif ()
-        target_sources(${PROJECT_NAME}_testlib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${f})
-    endforeach ()
-endfunction()
-
-function(nng_headers_if COND)
-    foreach (f ${ARGN})
-        if (COND)
-            target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include/${f})
-        endif ()
-        target_sources(${PROJECT_NAME}_testlib PRIVATE ${PROJECT_SOURCE_DIR}/include/${f})
-    endforeach ()
-endfunction()
-
-function(nng_defines_if COND)
-    if (${COND})
-        # Revisit this one
-        target_compile_definitions(${PROJECT_NAME} PUBLIC ${ARGN})
-    endif ()
-    target_compile_definitions(${PROJECT_NAME}_testlib PRIVATE ${ARGN})
-endfunction()
-
-function(nng_link_libraries_if COND)
-    if (${COND})
-        target_link_libraries(${PROJECT_NAME} PRIVATE ${ARGN})
-    endif ()
-    target_link_libraries(${PROJECT_NAME}_testlib PRIVATE ${ARGN})
-endfunction()
 
 add_subdirectory(src)
 
