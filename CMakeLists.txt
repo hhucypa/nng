@@ -183,13 +183,6 @@ endif ()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${NNG_WARN_FLAGS} ${NNG_COVERAGE_C_FLAGS} ${NNG_SANITIZER_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NNG_WARN_FLAGS} ${NNG_COVERAGE_C_FLAGS} ${NNG_SANITIZER_FLAGS}")
 
-TEST_BIG_ENDIAN(NNG_BIG_ENDIAN)
-if (NNG_BIG_ENDIAN)
-    add_definitions(-DNNG_BIG_ENDIAN)
-else ()
-    add_definitions(-DNNG_LITTLE_ENDIAN)
-endif ()
-
 # If the compiler is not on Windows, does it support hiding the
 # symbols by default?  For shared libraries we would like to do this.
 if (NOT WIN32 AND NOT CYGWIN)
@@ -265,55 +258,6 @@ else ()
     message(AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
     # blithely hope for POSIX to work
     add_definitions(-DNNG_PLATFORM_POSIX)
-endif ()
-
-if (NOT WIN32)
-    # Unconditionally declare the following feature test macros.  These are
-    # needed for some platforms (glibc and SunOS/illumos) and are harmless
-    # on the others.
-    add_definitions(-D_GNU_SOURCE)
-    add_definitions(-D_REENTRANT)
-    add_definitions(-D_THREAD_SAFE)
-    add_definitions(-D_POSIX_PTHREAD_SEMANTICS)
-
-    nng_check_func(lockf NNG_HAVE_LOCKF)
-    nng_check_func(flock NNG_HAVE_FLOCK)
-    nng_check_func(getrandom NNG_HAVE_GETRANDOM)
-    nng_check_func(arc4random_buf NNG_HAVE_ARC4RANDOM)
-
-    nng_check_lib(rt clock_gettime NNG_HAVE_CLOCK_GETTIME)
-    nng_check_lib(pthread sem_wait NNG_HAVE_SEMAPHORE_PTHREAD)
-    nng_check_lib(pthread pthread_atfork NNG_HAVE_PTHREAD_ATFORK_PTHREAD)
-    nng_check_lib(pthread pthread_set_name_np NNG_HAVE_PTHREAD_SET_NAME_NP)
-    nng_check_lib(pthread pthread_setname_np NNG_HAVE_PTHREAD_SETNAME_NP)
-    nng_check_lib(nsl gethostbyname NNG_HAVE_LIBNSL)
-    nng_check_lib(socket socket NNG_HAVE_LIBSOCKET)
-
-    # GCC needs libatomic on some architectures (e.g. ARM) because the
-    # underlying architecture may lack the necessary atomic primitives.
-    # One hopes that the libatomic implementation is superior to just using
-    # a pthread mutex.  The symbol chosen here was identified from GCC's
-    # libatomic map file.
-    #
-    # Arguably when using clang, compiler-rt might be better.
-    nng_check_lib(atomic __atomic_load_1 NNG_HAVE_LIBATOMIC)
-
-    nng_check_sym(AF_UNIX sys/socket.h NNG_HAVE_UNIX_SOCKETS)
-    nng_check_sym(backtrace_symbols_fd execinfo.h NNG_HAVE_BACKTRACE)
-    nng_check_struct_member(msghdr msg_control sys/socket.h NNG_HAVE_MSG_CONTROL)
-    nng_check_sym(eventfd sys/eventfd.h NNG_HAVE_EVENTFD)
-    nng_check_sym(kqueue sys/event.h NNG_HAVE_KQUEUE)
-    nng_check_sym(port_create port.h NNG_HAVE_PORT_CREATE)
-    nng_check_sym(epoll_create sys/epoll.h NNG_HAVE_EPOLL)
-    nng_check_sym(epoll_create1 sys/epoll.h NNG_HAVE_EPOLL_CREATE1)
-    nng_check_sym(getpeereid unistd.h NNG_HAVE_GETPEEREID)
-    nng_check_sym(SO_PEERCRED sys/socket.h NNG_HAVE_SOPEERCRED)
-    nng_check_struct_member(sockpeercred uid sys/socket.h NNG_HAVE_SOCKPEERCRED)
-    nng_check_sym(LOCAL_PEERCRED sys/un.h NNG_HAVE_LOCALPEERCRED)
-    nng_check_sym(LOCAL_PEERPID sys/un.h NNG_HAVE_LOCALPEERPID)
-    nng_check_sym(getpeerucred ucred.h NNG_HAVE_GETPEERUCRED)
-    nng_check_sym(atomic_flag_test_and_set stdatomic.h NNG_HAVE_STDATOMIC)
-
 endif ()
 
 nng_check_sym(strlcpy string.h NNG_HAVE_STRLCPY)
