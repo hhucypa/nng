@@ -9,6 +9,12 @@
 
 # Some NNG helper functions.
 
+include(CheckFunctionExists)
+include(CheckSymbolExists)
+include(CheckStructHasMember)
+include(CheckLibraryExists)
+include(CheckCSourceCompiles)
+
 # nng_sources adds library sources using files in the current directory.
 function(nng_sources)
     foreach (f ${ARGN})

@@ -28,15 +28,9 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(nng C)
-include(CheckFunctionExists)
-include(CheckSymbolExists)
-include(CheckStructHasMember)
-include(CheckLibraryExists)
-include(CheckCSourceCompiles)
 include(CheckCCompilerFlag)
 include(CMakeDependentOption)
 include(GNUInstallDirs)
-include(TestBigEndian)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -258,6 +252,7 @@ else ()
     message(AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
     # blithely hope for POSIX to work
     add_definitions(-DNNG_PLATFORM_POSIX)
+    set(NNG_PLATFORM_POSIX ON)
 endif ()
 
 nng_check_sym(strlcpy string.h NNG_HAVE_STRLCPY)
@@ -265,14 +260,6 @@ nng_check_sym(strnlen string.h NNG_HAVE_STRNLEN)
 nng_check_sym(strcasecmp string.h NNG_HAVE_STRCASECMP)
 nng_check_sym(strncasecmp string.h NNG_HAVE_STRNCASECMP)
 
-# Set a static symbol.  We do this for testing, so that tests can
-# be skipped if they would rely on symbols that might not be exported.
-# For example, idhash depends on private symbols, so don't test it
-# when using a shared library on Windows because the symbols won't
-# resolve.
-# In order to facilitate testing, we want to add a library that includes
-# our common test code.  We do this before iterating everywhere else so
-# that we can locate our tests inside the directories where we want.
 if (NNG_TESTS)
     enable_testing()
     set(all_tests, "")
