@@ -255,11 +255,6 @@ else ()
     set(NNG_PLATFORM_POSIX ON)
 endif ()
 
-nng_check_sym(strlcpy string.h NNG_HAVE_STRLCPY)
-nng_check_sym(strnlen string.h NNG_HAVE_STRNLEN)
-nng_check_sym(strcasecmp string.h NNG_HAVE_STRCASECMP)
-nng_check_sym(strncasecmp string.h NNG_HAVE_STRNCASECMP)
-
 if (NNG_TESTS)
     enable_testing()
     set(all_tests, "")
